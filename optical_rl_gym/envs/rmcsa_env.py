@@ -100,17 +100,33 @@ class RMCSAEnv(OpticalNetworkEnv):
             self.reset(only_counters=False)
 
     def step(self, action: [int]):
+        # Compute statistics for analysis
         route, core, initial_slot = action[0], action[1], action[2]
+
+        # ???
         self.actions_output[route, core, initial_slot] += 1
-        if route < self.k_paths and core < self.num_spatial_resources and initial_slot < self.num_spectrum_resources:
+
+        # Check if the decision that was passed is valid
+        if route < self.k_paths and \
+                core < self.num_spatial_resources and \
+                initial_slot < self.num_spectrum_resources:
+
             slots = self.get_number_slots(self.k_shortest_paths[self.service.source, self.service.destination][route])
+
             self.logger.debug('{} processing action {} route {} and initial slot {} for {} slots'.format(self.service.service_id, action, route, initial_slot, slots))
             if self.is_path_free(self.k_shortest_paths[self.service.source, self.service.destination][route], core,
                                  initial_slot, slots):
+
+
+
+                # Set the resources that were free to "used"
                 self._provision_path(self.k_shortest_paths[self.service.source, self.service.destination][route], core,
                                      initial_slot, slots)
+                # More statistics
                 self.service.accepted = True
                 self.actions_taken[route, core, initial_slot] += 1
+
+                # Schedule the event for the resources to leave the network (after amount of time)
                 self._add_release(self.service)
             else:
                 self.service.accepted = False
@@ -120,6 +136,7 @@ class RMCSAEnv(OpticalNetworkEnv):
         if not self.service.accepted:
             self.actions_taken[self.k_paths, self.num_spatial_resources, self.num_spectrum_resources] += 1
 
+        # More statistics
         self.services_processed += 1
         self.episode_services_processed += 1
         self.bit_rate_requested += self.service.bit_rate
@@ -127,7 +144,9 @@ class RMCSAEnv(OpticalNetworkEnv):
 
         self.topology.graph['services'].append(self.service)
 
+        # Get the value of the action
         reward = self.reward()
+        # Summarize computed statistics
         info = {
                    'service_blocking_rate': (self.services_processed - self.services_accepted) / self.services_processed,
                    'episode_service_blocking_rate': (self.episode_services_processed - self.episode_services_accepted) / self.episode_services_processed,

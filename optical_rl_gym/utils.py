@@ -81,7 +81,7 @@ def evaluate_heuristic(env, heuristic, n_eval_episodes=10,
         episode_reward = 0.0
         episode_length = 0
         while not done:
-            action = heuristic(env)
+            action = heuristic(env) # returns a 2-part list: 1st is the path, 2nd is the spectrum
             obs, reward, done, _info = env.step(action)
             episode_reward += reward
             if callback is not None:
